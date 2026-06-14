@@ -5,6 +5,11 @@ pipeline {
         maven 'Maven-3.9.6'
     }
 
+    environment {
+        APP_NAME = "expense-tracker-service"
+        BUILD_VERSION = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+    }
+
     stages {
 
         stage('Checkout') {
@@ -39,37 +44,53 @@ pipeline {
             }
             steps {
                 echo "Running integration tests for develop branch"
-                // sh 'mvn verify'  // enable when ready
+                // sh 'mvn verify'
             }
         }
 
-        stage('Prepare Release Artifact') {
-            when {
-                expression { env.BRANCH_NAME.startsWith("release/") }
-            }
+        stage('Package Artifact') {
             steps {
-                echo "Preparing release candidate artifact"
-                // sh 'mvn clean package'
+                echo "Packaging artifact for Spinnaker"
+                sh "cp target/${APP_NAME}-0.0.1-SNAPSHOT.jar target/${APP_NAME}-${BUILD_VERSION}.jar"
             }
         }
 
-        stage('Production Build') {
+        stage('Publish Artifact Metadata') {
+            steps {
+                echo "Publishing artifact metadata for Spinnaker trigger"
+                writeFile file: "artifact.json", text: """
+                {
+                  "app": "${APP_NAME}",
+                  "version": "${BUILD_VERSION}",
+                  "branch": "${env.BRANCH_NAME}",
+                  "timestamp": "${new Date().getTime()}"
+                }
+                """
+                archiveArtifacts artifacts: 'artifact.json', fingerprint: true
+            }
+        }
+
+        stage('Notify Spinnaker') {
             when {
-                expression { env.BRANCH_NAME == "master" }
+                expression {
+                    env.BRANCH_NAME == "develop" ||
+                    env.BRANCH_NAME.startsWith("release/") ||
+                    env.BRANCH_NAME == "master"
+                }
             }
             steps {
-                echo "Building production artifact"
-                sh 'mvn clean package'
+                echo "Triggering Spinnaker pipeline for ${env.BRANCH_NAME}"
+                // curl -X POST http://spinnaker/api/v1/pipelines/trigger ...
             }
         }
     }
 
     post {
         success {
-            echo "Build SUCCESS on branch: ${env.BRANCH_NAME}"
+            echo "CI SUCCESS for ${env.BRANCH_NAME}"
         }
         failure {
-            echo "Build FAILED on branch: ${env.BRANCH_NAME}"
+            echo "CI FAILED for ${env.BRANCH_NAME}"
         }
     }
 }
