@@ -5,7 +5,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.example</groupId>
+    <groupId>com.expense</groupId>
     <artifactId>expense-tracker-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>expense-tracker-service</name>
