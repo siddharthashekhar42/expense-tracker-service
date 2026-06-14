@@ -7,8 +7,10 @@ pipeline {
 
     environment {
         APP_NAME = "expense-tracker-service"
-        BUILD_VERSION = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+        SAFE_BRANCH = "${env.BRANCH_NAME.replace('/', '-')}"
+        BUILD_VERSION = "${SAFE_BRANCH}-${env.BUILD_NUMBER}"
     }
+
 
     stages {
 
