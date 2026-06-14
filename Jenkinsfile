@@ -1,13 +1,11 @@
 pipeline {
     agent any
 
-    stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
+    tools {
+        maven 'Maven-3.9.6'
+    }
 
+    stages {
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
@@ -18,15 +16,6 @@ pipeline {
             steps {
                 sh 'mvn test'
             }
-        }
-    }
-
-    post {
-        success {
-            echo "Build OK on branch: ${env.BRANCH_NAME}"
-        }
-        failure {
-            echo "Build FAILED on branch: ${env.BRANCH_NAME}"
         }
     }
 }
